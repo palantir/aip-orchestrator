@@ -1,0 +1,19 @@
+apply plugin: 'application'
+apply plugin: 'com.palantir.external-publish-dist'
+
+mainClassName = 'com.palantir.aip.processing.cli.AipOrchestrator'
+
+dependencies {
+    implementation 'com.palantir.aip.processors.api:aip-processor-api'
+
+    implementation 'io.grpc:grpc-api'
+    implementation 'io.grpc:grpc-stub'
+    implementation 'info.picocli:picocli'
+
+    implementation 'com.google.guava:guava'
+
+    runtime 'io.grpc:grpc-netty-shaded'
+
+    annotationProcessor 'org.immutables:value'
+    compileOnly 'org.immutables:value::annotations'
+}

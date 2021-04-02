@@ -1,0 +1,5 @@
+# Excavator auto-updates this file. Please contribute improvements to the central template.
+
+remote: foundry/standards
+path: policy-bot/default.yml
+ref: develop
