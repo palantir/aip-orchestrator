@@ -1,0 +1,14 @@
+apply plugin: 'com.palantir.publish-jar'
+
+dependencies {
+    implementation 'com.google.guava:guava'
+    implementation 'org.slf4j:slf4j-api'
+
+    annotationProcessor 'com.palantir.immutables.style:immutables-style'
+    annotationProcessor 'org.immutables:value'
+    compileOnly 'org.immutables:value::annotations'
+
+    testImplementation 'junit:junit'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.mockito:mockito-core'
+}

@@ -1,0 +1,13 @@
+org.junit.jupiter:* = 5.7.1
+org.junit.vintage:* = 5.7.1
+com.google.guava:guava = 30.1.1-jre
+com.palantir.immutables.style:immutables-style = 1.2.1
+junit:junit = 4.13.2
+org.assertj:assertj-core = 3.19.0
+org.immutables:* = 2.8.8
+org.mockito:mockito-core = 3.8.0
+org.slf4j:* = 1.7.30
+
+# conflict resolution
+com.google.code.findbugs:jsr305 = 3.0.2
+com.google.errorprone:error_prone_annotations = 2.6.0

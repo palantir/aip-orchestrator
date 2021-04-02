@@ -1,0 +1,243 @@
+# Excavator auto-updates this file. Please contribute improvements to the central template:
+# https://github.palantir.build/excavator-checks/circle-templates/blob/develop/excavator/circleci/templates/java-library.config.yml
+# To manually manage the CircleCI configuration for this project, remove the .circleci/template.sh file.
+
+version: 2
+jobs:
+
+  compile:
+    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.1464' }]
+    resource_class: large
+    environment:
+      JAVA_HOME: /opt/java8
+      GRADLE_OPTS: -Dorg.gradle.jvmargs='-XX:MaxMetaspaceSize=256m' -Dorg.gradle.workers.max=4
+      _JAVA_OPTIONS: -XX:ActiveProcessorCount=4 -Xmx1177m -XX:MaxMetaspaceSize=512m -XX:ErrorFile=/home/circleci/artifacts/hs_err_pid%p.log -XX:HeapDumpPath=/home/circleci/artifacts
+    steps:
+      - checkout
+      - run: delete_unrelated_tags
+      - restore_cache: { key: 'gradle-wrapper-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
+      - restore_cache: { key: 'compile-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
+      - run: { command: monitor_all_processes, background: true }
+      - run: ./gradlew --parallel --stacktrace classes testClasses
+      - save_cache:
+          key: 'gradle-wrapper-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}'
+          paths: [ ~/.gradle/wrapper ]
+      - save_cache:
+          key: 'compile-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}'
+          paths: [ ~/.gradle/caches ]
+      - store_test_results: { path: ~/junit }
+      - store_artifacts: { path: ~/artifacts }
+      - persist_to_workspace:
+          root: /home/circleci
+          paths: [ project, .gradle/init.gradle ]
+      - run:
+          name: Upload hs_err_pid files to help debug Gradle segfaults
+          command: find ~/artifacts -name 'hs_err_pid*' -exec curl -XPUT --fail --upload-file {} https://artifactory.palantir.build/artifactory/internal-dist-sandbox/hs_err_pid/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-hs_err_pid.yml \;
+          when: always
+      - run:
+          name: Upload core dump to help debug Gradle segfaults
+          command: |
+            find ~/project -name 'core.*' -exec curl -XPUT --fail --upload-file {} https://publish.artifactory.palantir.build/artifactory/internal-dist-sandbox/circle_core_dumps/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-core.bin \;
+          when: on_fail
+
+
+  check:
+    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.1464' }]
+    resource_class: medium
+    environment:
+      JAVA_HOME: /opt/java8
+      GRADLE_OPTS: -Dorg.gradle.jvmargs='-XX:MaxMetaspaceSize=256m' -Dorg.gradle.workers.max=2
+      _JAVA_OPTIONS: -XX:ActiveProcessorCount=2 -Xmx938m -XX:MaxMetaspaceSize=512m -XX:ErrorFile=/home/circleci/artifacts/hs_err_pid%p.log -XX:HeapDumpPath=/home/circleci/artifacts
+    steps:
+      - attach_workspace: { at: /home/circleci }
+      - restore_cache: { key: 'gradle-wrapper-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
+      - restore_cache: { key: 'check-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
+      - run: { command: monitor_all_processes, background: true }
+      - run: ./gradlew --parallel --stacktrace --continue check idea -x test
+      - save_cache:
+          key: 'check-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}'
+          paths: [ ~/.gradle/caches ]
+      - run:
+          command: mkdir -p ~/junit && find . -type f -regex ".*/build/.*TEST.*xml" -exec cp --parents {} ~/junit/ \;
+          when: always
+      - store_test_results: { path: ~/junit }
+      - store_artifacts: { path: ~/artifacts }
+      - run:
+          name: Upload hs_err_pid files to help debug Gradle segfaults
+          command: find ~/artifacts -name 'hs_err_pid*' -exec curl -XPUT --fail --upload-file {} https://artifactory.palantir.build/artifactory/internal-dist-sandbox/hs_err_pid/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-hs_err_pid.yml \;
+          when: always
+      - run:
+          name: Upload core dump to help debug Gradle segfaults
+          command: |
+            find ~/project -name 'core.*' -exec curl -XPUT --fail --upload-file {} https://publish.artifactory.palantir.build/artifactory/internal-dist-sandbox/circle_core_dumps/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-core.bin \;
+          when: on_fail
+
+
+  unit-test:
+    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.1464' }]
+    resource_class: large
+    environment:
+      JAVA_HOME: /opt/java8
+      GRADLE_OPTS: -Dorg.gradle.jvmargs='-XX:MaxMetaspaceSize=256m' -Dorg.gradle.workers.max=4
+      _JAVA_OPTIONS: -XX:ActiveProcessorCount=4 -Xmx1177m -XX:MaxMetaspaceSize=512m -XX:ErrorFile=/home/circleci/artifacts/hs_err_pid%p.log -XX:HeapDumpPath=/home/circleci/artifacts
+    parallelism: 1
+    steps:
+      - attach_workspace: { at: /home/circleci }
+      - restore_cache: { key: 'gradle-wrapper-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
+      - restore_cache: { key: 'unit-test-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
+      - run: { command: monitor_all_processes, background: true }
+      - run: ./gradlew --parallel --stacktrace --continue --max-workers=2 test
+      - save_cache:
+          key: 'unit-test-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}'
+          paths: [ ~/.gradle/caches ]
+      - run:
+          command: mkdir -p ~/junit && find . -type f -regex ".*/build/.*TEST.*xml" -exec cp --parents {} ~/junit/ \;
+          when: always
+      - store_test_results: { path: ~/junit }
+      - store_artifacts: { path: ~/artifacts }
+      - run:
+          name: Upload hs_err_pid files to help debug Gradle segfaults
+          command: find ~/artifacts -name 'hs_err_pid*' -exec curl -XPUT --fail --upload-file {} https://artifactory.palantir.build/artifactory/internal-dist-sandbox/hs_err_pid/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-hs_err_pid.yml \;
+          when: always
+      - run:
+          name: Upload core dump to help debug Gradle segfaults
+          command: |
+            find ~/project -name 'core.*' -exec curl -XPUT --fail --upload-file {} https://publish.artifactory.palantir.build/artifactory/internal-dist-sandbox/circle_core_dumps/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-core.bin \;
+          when: on_fail
+
+
+  unit-test-11:
+    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.1464' }]
+    resource_class: large
+    environment:
+      JAVA_HOME: /opt/java11
+      GRADLE_OPTS: -Dorg.gradle.jvmargs='-XX:MaxMetaspaceSize=256m' -Dorg.gradle.workers.max=4
+      _JAVA_OPTIONS: -XX:ActiveProcessorCount=4 -Xmx1177m -XX:MaxMetaspaceSize=512m -XX:ErrorFile=/home/circleci/artifacts/hs_err_pid%p.log -XX:HeapDumpPath=/home/circleci/artifacts
+    parallelism: 1
+    steps:
+      - checkout
+      - restore_cache: { key: 'gradle-wrapper-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
+      - restore_cache: { key: 'unit-test-11-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
+      - run: { command: monitor_all_processes, background: true }
+      - run: ./gradlew --parallel --stacktrace --continue test -Pcom.palantir.baseline-error-prone.disable
+      - save_cache:
+          key: 'unit-test-11-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}'
+          paths: [ ~/.gradle/caches ]
+      - run:
+          command: mkdir -p ~/junit && find . -type f -regex ".*/build/.*TEST.*xml" -exec cp --parents {} ~/junit/ \;
+          when: always
+      - store_test_results: { path: ~/junit }
+      - store_artifacts: { path: ~/artifacts }
+      - run:
+          name: Upload hs_err_pid files to help debug Gradle segfaults
+          command: find ~/artifacts -name 'hs_err_pid*' -exec curl -XPUT --fail --upload-file {} https://artifactory.palantir.build/artifactory/internal-dist-sandbox/hs_err_pid/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-hs_err_pid.yml \;
+          when: always
+      - run:
+          name: Upload core dump to help debug Gradle segfaults
+          command: |
+            find ~/project -name 'core.*' -exec curl -XPUT --fail --upload-file {} https://publish.artifactory.palantir.build/artifactory/internal-dist-sandbox/circle_core_dumps/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-core.bin \;
+          when: on_fail
+
+
+  trial-publish:
+    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.1464' }]
+    resource_class: medium
+    environment:
+      JAVA_HOME: /opt/java8
+      GRADLE_OPTS: -Dorg.gradle.jvmargs='-XX:MaxMetaspaceSize=256m' -Dorg.gradle.workers.max=2
+      _JAVA_OPTIONS: -XX:ActiveProcessorCount=2 -Xmx938m -XX:MaxMetaspaceSize=512m -XX:ErrorFile=/home/circleci/artifacts/hs_err_pid%p.log -XX:HeapDumpPath=/home/circleci/artifacts
+    steps:
+      - attach_workspace: { at: /home/circleci }
+      - restore_cache: { key: 'gradle-wrapper-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
+      - restore_cache: { key: 'trial-publish-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
+      - run: { command: monitor_all_processes, background: true }
+      - run: ./gradlew --stacktrace publishToMavenLocal
+      - save_cache:
+          key: 'trial-publish-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}'
+          paths: [ ~/.gradle/caches ]
+      - store_test_results: { path: ~/junit }
+      - store_artifacts: { path: ~/artifacts }
+      - run:
+          name: Upload hs_err_pid files to help debug Gradle segfaults
+          command: find ~/artifacts -name 'hs_err_pid*' -exec curl -XPUT --fail --upload-file {} https://artifactory.palantir.build/artifactory/internal-dist-sandbox/hs_err_pid/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-hs_err_pid.yml \;
+          when: always
+      - run:
+          name: Upload core dump to help debug Gradle segfaults
+          command: |
+            find ~/project -name 'core.*' -exec curl -XPUT --fail --upload-file {} https://publish.artifactory.palantir.build/artifactory/internal-dist-sandbox/circle_core_dumps/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-core.bin \;
+          when: on_fail
+
+
+  publish:
+    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.1464' }]
+    resource_class: medium
+    environment:
+      JAVA_HOME: /opt/java8
+      GRADLE_OPTS: -Dorg.gradle.jvmargs='-XX:MaxMetaspaceSize=256m' -Dorg.gradle.workers.max=2
+      _JAVA_OPTIONS: -XX:ActiveProcessorCount=2 -Xmx938m -XX:MaxMetaspaceSize=512m -XX:ErrorFile=/home/circleci/artifacts/hs_err_pid%p.log -XX:HeapDumpPath=/home/circleci/artifacts
+    steps:
+      - attach_workspace: { at: /home/circleci }
+      - restore_cache: { key: 'gradle-wrapper-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
+      - restore_cache: { key: 'publish-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
+      - run: { command: monitor_all_processes, background: true }
+      - deploy:
+          command: ./gradlew --parallel --stacktrace --continue publish
+      - run:
+          command: git status --porcelain
+          when: always
+      - save_cache:
+          key: 'publish-gradle-cache-v2-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}'
+          paths: [ ~/.gradle/caches ]
+      - store_test_results: { path: ~/junit }
+      - store_artifacts: { path: ~/artifacts }
+      - run:
+          name: Upload hs_err_pid files to help debug Gradle segfaults
+          command: find ~/artifacts -name 'hs_err_pid*' -exec curl -XPUT --fail --upload-file {} https://artifactory.palantir.build/artifactory/internal-dist-sandbox/hs_err_pid/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-hs_err_pid.yml \;
+          when: always
+      - run:
+          name: Upload core dump to help debug Gradle segfaults
+          command: |
+            find ~/project -name 'core.*' -exec curl -XPUT --fail --upload-file {} https://publish.artifactory.palantir.build/artifactory/internal-dist-sandbox/circle_core_dumps/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_BUILD_NUM-$CIRCLE_STAGE-core.bin \;
+          when: on_fail
+
+  circle-all:
+    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.1464' }]
+    resource_class: small
+    steps:
+      - run: {command: echo "All required jobs finished successfully"}
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - compile:
+          filters: { tags: { only: /.*/ } }
+
+      - unit-test:
+          requires: [ compile ]
+          filters: { tags: { only: /.*/ } }
+
+      - unit-test-11:
+          filters: { tags: { only: /.*/ } }
+
+      - check:
+          requires: [ compile ]
+          filters: { tags: { only: /.*/ } }
+
+      - trial-publish:
+          requires: [ compile ]
+          filters: { branches: { ignore: [ develop ] } }
+
+      # Catch-all for all required checks
+      - circle-all:
+          requires: [ unit-test, unit-test-11, check, trial-publish ]
+          filters: { tags: { only: /.*/ } }
+
+      - publish:
+          requires: [ circle-all ]
+          filters: { tags: { only: /.*/ }, branches: { only: develop } }
+
+
+notify:
+  webhooks:
+    - url: https://parana.palantir.build/hook
