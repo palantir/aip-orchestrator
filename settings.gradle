@@ -1,14 +1,3 @@
-/*
-buildscript {
-    repositories {
-        maven { url 'https://artifactory.palantir.build/artifactory/release-jar' }
-    }
-    dependencies {
-        classpath 'com.palantir.gradle.buildscan:gradle-internal-build-scan:1.16.0'
-    }
-}
-apply plugin: 'com.palantir.build-scan.settings'
-*/
 rootProject.name = 'aip-orchestrator'
 
 include 'aip-orchestrator-core'

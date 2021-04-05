@@ -11,15 +11,11 @@ dependencies {
     implementation 'info.picocli:picocli'
 
     implementation 'com.google.guava:guava'
-    implementation 'org.slf4j:slf4j-api'
+    //implementation 'org.slf4j:slf4j-api'
 
     runtime 'io.grpc:grpc-netty-shaded'
 
-    annotationProcessor 'com.palantir.immutables.style:immutables-style'
+    //annotationProcessor 'com.palantir.immutables.style:immutables-style'
     annotationProcessor 'org.immutables:value'
     compileOnly 'org.immutables:value::annotations'
-
-    testImplementation 'junit:junit'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.mockito:mockito-core'
 }
