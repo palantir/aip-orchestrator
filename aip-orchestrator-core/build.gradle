@@ -11,11 +11,9 @@ dependencies {
     implementation 'info.picocli:picocli'
 
     implementation 'com.google.guava:guava'
-    //implementation 'org.slf4j:slf4j-api'
 
     runtime 'io.grpc:grpc-netty-shaded'
 
-    //annotationProcessor 'com.palantir.immutables.style:immutables-style'
     annotationProcessor 'org.immutables:value'
     compileOnly 'org.immutables:value::annotations'
 }
