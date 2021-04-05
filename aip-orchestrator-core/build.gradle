@@ -1,8 +1,19 @@
-apply plugin: 'com.palantir.publish-jar'
+apply plugin: 'application'
+apply plugin: 'com.palantir.external-publish-dist'
+
+mainClassName = 'com.palantir.aip.processing.cli.AipOrchestrator'
 
 dependencies {
+	implementation 'com.palantir.aip.processors.api:aip-processor-api'
+
+	implementation 'io.grpc:grpc-api'
+    implementation 'io.grpc:grpc-stub'
+    implementation 'info.picocli:picocli'
+
     implementation 'com.google.guava:guava'
     implementation 'org.slf4j:slf4j-api'
+
+    runtime 'io.grpc:grpc-netty-shaded'
 
     annotationProcessor 'com.palantir.immutables.style:immutables-style'
     annotationProcessor 'org.immutables:value'

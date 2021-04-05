@@ -1,3 +1,4 @@
+/*
 buildscript {
     repositories {
         maven { url 'https://artifactory.palantir.build/artifactory/release-jar' }
@@ -7,6 +8,7 @@ buildscript {
     }
 }
 apply plugin: 'com.palantir.build-scan.settings'
+*/
 rootProject.name = 'aip-orchestrator'
 
 include 'aip-orchestrator-core'
