@@ -4,9 +4,9 @@ apply plugin: 'com.palantir.external-publish-dist'
 mainClassName = 'com.palantir.aip.processing.cli.AipOrchestrator'
 
 dependencies {
-	implementation 'com.palantir.aip.processors.api:aip-processor-api'
+    implementation 'com.palantir.aip.processors.api:aip-processor-api'
 
-	implementation 'io.grpc:grpc-api'
+    implementation 'io.grpc:grpc-api'
     implementation 'io.grpc:grpc-stub'
     implementation 'info.picocli:picocli'
 
