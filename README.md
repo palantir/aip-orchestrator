@@ -1,15 +1,6 @@
-aip-orchestrator
-============
-A simple Java project.
+AIP Orchestrator
+================
 
-Gradle Tasks
-------------
-`./gradlew tasks` - to get the list of gradle tasks
+This repo contains a light-weight simulator of the AI Inference Platform (AIP). It can send InferenceRequests to a processor at some frames-per-second, and print the InferenceResponses received.
 
-
-Start Developing
-----------------
-Run one of the following commands:
-
-* `./gradlew idea` for IntelliJ
-* `./gradlew eclipse` for Eclipse
+The real AIP is Palantir Gotham’s proprietary platform to perform real-time augmentations and computations on streamed videos. AIP is the base platform that accepts video streams as input, and decodes them. Then, it runs the decoded video through zero or more “processor” services, which are responsible for actually processing the video. Please read the [AIP SDK Documentation](https://pages.github.palantir.build/video/aip-sdk/introduction) for more information.
