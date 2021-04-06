@@ -1,59 +1,41 @@
+apply plugin: 'com.palantir.external-publish'
+
 buildscript {
     repositories {
-        maven {
-            url 'https://artifactory.palantir.build/artifactory/release-jar'
-        }
+        maven { url 'https://palantir.bintray.com/releases'}
+        maven { url "https://plugins.gradle.org/m2/" }
+        mavenCentral()
     }
 
     dependencies {
-        classpath 'com.palantir.artifact-recall:gradle-artifact-recall:0.14.2'
-        classpath 'com.palantir.gradle.onelogger:onelogger:0.1.1'
-        classpath 'com.palantir.jakarta-renames:gradle-jakarta-renames:1.7.0'
         classpath 'com.palantir.javaformat:gradle-palantir-java-format:1.0.1'
         classpath 'com.palantir.gradle.consistentversions:gradle-consistent-versions:1.28.0'
-        classpath 'com.palantir.baseline:gradle-baseline-java:3.75.0'
         classpath 'com.palantir.gradle.gitversion:gradle-git-version:0.12.3'
-        classpath 'com.palantir.internalpublish:gradle-internal-publish-plugin:4.5.0'
         classpath 'gradle.plugin.org.inferred:gradle-processors:3.3.0'
+
+        classpath 'com.palantir.gradle.externalpublish:gradle-external-publish-plugin:0.4.10'
     }
 }
 
-apply plugin: 'com.palantir.baseline'
+apply plugin: 'idea'
 apply plugin: 'com.palantir.git-version'
 apply plugin: 'com.palantir.consistent-versions'
 
 allprojects {
     apply plugin: 'com.palantir.java-format'
-    apply plugin: 'com.palantir.jakarta-renames'
-    apply plugin: 'com.palantir.onelogger'
-    apply plugin: 'com.palantir.artifact-recall'
 
     version gitVersion()
-    group 'com.palantir.aiporchestrator'
+    group 'com.palantir.aip.processing'
 
     repositories {
-        maven {
-            url 'https://artifactory.palantir.build/artifactory/release-jar'
-        }
+        mavenCentral()
+        maven { url 'https://palantir.bintray.com/releases'}
     }
 }
 
 subprojects {
     apply plugin: 'java-library'
-    apply plugin: 'org.inferred.processors'
-    apply plugin: 'com.palantir.baseline-class-uniqueness'
-
-    tasks.withType(JavaCompile) {
-        options.compilerArgs += ['-Werror']
-    }
 
     tasks.check.dependsOn(javadoc)
-    sourceCompatibility = 1.8
-
-    dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter'
-        testRuntimeOnly("org.junit.vintage:junit-vintage-engine") {
-            because 'allows JUnit 3 and JUnit 4 tests to run'
-        }
-    }
+    sourceCompatibility = 1.11
 }

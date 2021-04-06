@@ -1,14 +1,19 @@
-apply plugin: 'com.palantir.publish-jar'
+apply plugin: 'application'
+apply plugin: 'com.palantir.external-publish-dist'
+
+mainClassName = 'com.palantir.aip.processing.cli.AipOrchestrator'
 
 dependencies {
-    implementation 'com.google.guava:guava'
-    implementation 'org.slf4j:slf4j-api'
+    implementation 'com.palantir.aip.processors.api:aip-processor-api'
 
-    annotationProcessor 'com.palantir.immutables.style:immutables-style'
+    implementation 'io.grpc:grpc-api'
+    implementation 'io.grpc:grpc-stub'
+    implementation 'info.picocli:picocli'
+
+    implementation 'com.google.guava:guava'
+
+    runtime 'io.grpc:grpc-netty-shaded'
+
     annotationProcessor 'org.immutables:value'
     compileOnly 'org.immutables:value::annotations'
-
-    testImplementation 'junit:junit'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.mockito:mockito-core'
 }
