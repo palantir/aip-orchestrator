@@ -1,13 +1,3 @@
 rootProject.name = 'aip-orchestrator'
 
 include 'aip-orchestrator-core'
-boolean isCiServer = System.getenv().containsKey('CI')
-buildCache {
-    local {
-        enabled = !isCiServer
-    }
-    remote(HttpBuildCache) {
-        url = 'https://cache.gradle.palantir.build/cache/devx/template-java/'
-        push = isCiServer
-    }
-}
