@@ -4,7 +4,6 @@
 
 package com.palantir.aip.processing;
 
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -14,14 +13,12 @@ import com.palantir.aip.processing.api.VideoFrame;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.InferenceResponse;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.UasMetadata;
-import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.Image;
 
 import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Optional;
 import javax.imageio.ImageIO;
 
 @SuppressWarnings("BanSystemOut")

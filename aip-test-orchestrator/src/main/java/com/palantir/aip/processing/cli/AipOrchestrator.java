@@ -29,7 +29,6 @@ public final class AipOrchestrator implements Runnable {
             new CommandLine.Help.ColorScheme.Builder(CommandLine.Help.Ansi.OFF).build();
     private static final CommandLine COMMAND_LINE =
             new CommandLine(new AipOrchestrator()).setUsageHelpAutoWidth(true).setColorScheme(NO_COLORS);
-    //private String testImageResourceName = "testImage.png";
 
     @CommandLine.Option(
             names = "--shared-images-dir",
