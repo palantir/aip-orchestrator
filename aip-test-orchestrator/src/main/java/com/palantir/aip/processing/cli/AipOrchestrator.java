@@ -49,10 +49,10 @@ public final class AipOrchestrator implements Runnable {
             defaultValue = "0.2")
     private double framesPerSecond;
 
-    @CommandLine.Option(names = "--height", description = "The height of the image to be sent.", defaultValue = "2480")
+    @CommandLine.Option(names = "--height", description = "The height of the image to be sent.", defaultValue = "2048")
     private int height;
 
-    @CommandLine.Option(names = "--width", description = "The width of the image to be sent.", defaultValue = "2480")
+    @CommandLine.Option(names = "--width", description = "The width of the image to be sent.", defaultValue = "2048")
     private int width;
 
 
