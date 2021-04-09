@@ -25,16 +25,14 @@ import javax.imageio.ImageIO;
 public final class CliFrameOrchestrator {
     private final AipInferenceProcessorClient processor;
     private final ProcessorV2Protos.Image testImage;
-    private final int height;
-    private final int width;
+    private final int height = 2048;
+    private final int width = 2048;
     private final String testImageResourcePath = "images/testImage.bgr888";
 
     public CliFrameOrchestrator(
-            Path sharedImagesDir, AipInferenceProcessorClient processor, int height, int width) {
+            Path sharedImagesDir, AipInferenceProcessorClient processor) {
         this.processor = processor;
         this.testImage = loadAndSaveTestImage(processor.getImageFormat(), sharedImagesDir);
-        this.height = height;
-        this.width = width;
     }
 
     public synchronized void send(Long ref) {

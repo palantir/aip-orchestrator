@@ -48,9 +48,6 @@ public final class AipOrchestrator implements Runnable {
             defaultValue = "0.2")
     private double framesPerSecond;
 
-    private final int height = 2048;
-    private final int width = 2048;
-
     private final AtomicLong frameId = new AtomicLong(0);
 
     public static AipInferenceProcessorClient grpc(HostAndPort hostAndPort, String productName, String productVersion) {
@@ -84,7 +81,7 @@ public final class AipOrchestrator implements Runnable {
         }
         System.out.println("Processor configured. Getting ready to send inference requests.");
 
-        CliFrameOrchestrator dispatcher = new CliFrameOrchestrator(sharedImagesDir, processor, height, width);
+        CliFrameOrchestrator dispatcher = new CliFrameOrchestrator(sharedImagesDir, processor);
         long nanosPerFrame = (long) ((1.0 / framesPerSecond) * 1_000_000_000);
         ScheduledFuture<?> task = Executors.newScheduledThreadPool(1)
                 .scheduleAtFixedRate(
