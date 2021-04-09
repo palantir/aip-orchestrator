@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2019 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2021 Palantir Technologies Inc. All rights reserved.
  */
 
 package com.palantir.aip.processing.cli;
@@ -29,12 +29,7 @@ public final class AipOrchestrator implements Runnable {
             new CommandLine.Help.ColorScheme.Builder(CommandLine.Help.Ansi.OFF).build();
     private static final CommandLine COMMAND_LINE =
             new CommandLine(new AipOrchestrator()).setUsageHelpAutoWidth(true).setColorScheme(NO_COLORS);
-
-    @CommandLine.Option(
-            names = "--test-image",
-            description = "The name of the source test image that should be sent to the processor.",
-            defaultValue = "testImage.png")
-    private String testImageResourceName;
+    //private String testImageResourceName = "testImage.png";
 
     @CommandLine.Option(
             names = "--shared-images-dir",
@@ -53,6 +48,13 @@ public final class AipOrchestrator implements Runnable {
             description = "The number of frames per second to send to the processor (can be a decimal).",
             defaultValue = "0.2")
     private double framesPerSecond;
+
+    @CommandLine.Option(names = "--height", description = "The height of the image to be sent.", defaultValue = "2480")
+    private int height;
+
+    @CommandLine.Option(names = "--width", description = "The width of the image to be sent.", defaultValue = "2480")
+    private int width;
+
 
     private final AtomicLong frameId = new AtomicLong(0);
 
@@ -73,12 +75,11 @@ public final class AipOrchestrator implements Runnable {
         System.out.println("Frames per second: " + framesPerSecond);
 
         System.out.println("Sending configuration request to server...");
-        AipInferenceProcessorClient processor = Optional.of(grpc(
+        AipInferenceProcessorClient processor = grpc(
                         HostAndPort.fromParts(uri.getHost(), uri.getPort()),
                         "AIP Orchestrator",
                         Optional.ofNullable(AipOrchestrator.class.getPackage().getImplementationVersion())
-                                .orElse("0.0.0")))
-                .orElseThrow(() -> new RuntimeException("Invalid uri"));
+                                .orElse("0.0.0"));
 
         try {
             processor.configure();
@@ -88,7 +89,7 @@ public final class AipOrchestrator implements Runnable {
         }
         System.out.println("Processor configured. Getting ready to send inference requests.");
 
-        CliFrameOrchestrator dispatcher = new CliFrameOrchestrator(sharedImagesDir, testImageResourceName, processor);
+        CliFrameOrchestrator dispatcher = new CliFrameOrchestrator(sharedImagesDir, processor, height, width);
         long nanosPerFrame = (long) ((1.0 / framesPerSecond) * 1_000_000_000);
         ScheduledFuture<?> task = Executors.newScheduledThreadPool(1)
                 .scheduleAtFixedRate(
