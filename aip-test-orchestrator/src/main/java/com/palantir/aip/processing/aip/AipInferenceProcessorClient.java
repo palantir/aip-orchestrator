@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2020 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2021 Palantir Technologies Inc. All rights reserved.
  */
 
 package com.palantir.aip.processing.aip;
@@ -50,12 +50,12 @@ public final class AipInferenceProcessorClient {
         handleConfigurationResponse(configResponse);
     }
 
-    public Optional<ListenableFuture<InferenceResponse>> infer(VideoFrame videoFrame) {
+    public ListenableFuture<InferenceResponse> infer(VideoFrame videoFrame) {
         ProcessorV2Protos.InferenceRequest request = ProcessorV2Protos.InferenceRequest.newBuilder()
                 .setHeader(getHeader(videoFrame))
                 .setFrame(getFrameMessage(videoFrame))
                 .build();
-        return Optional.of(GrpcCalls.call(this.stub::infer, request));
+        return GrpcCalls.call(this.stub::infer, request);
     }
 
     private void handleConfigurationResponse(ConfigProtos.ConfigurationResponse response) {

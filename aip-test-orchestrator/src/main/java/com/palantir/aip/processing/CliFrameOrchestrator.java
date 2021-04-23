@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2019 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2021 Palantir Technologies Inc. All rights reserved.
  */
 
 package com.palantir.aip.processing;
@@ -13,36 +13,36 @@ import com.palantir.aip.processing.api.VideoFrame;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.InferenceResponse;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.UasMetadata;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+
+import java.awt.*;
+import java.awt.image.*;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Optional;
 import javax.imageio.ImageIO;
 
 @SuppressWarnings("BanSystemOut")
 public final class CliFrameOrchestrator {
     private final AipInferenceProcessorClient processor;
     private final ProcessorV2Protos.Image testImage;
+    private static final int height = 2048;
+    private static final int width = 2048;
+    private static final String testImageResourcePath = "images/testImage.bgr888";
 
     public CliFrameOrchestrator(
-            Path sharedImagesDir, String testImageResourceName, AipInferenceProcessorClient processor) {
+            Path sharedImagesDir, AipInferenceProcessorClient processor) {
         this.processor = processor;
-        this.testImage = loadAndSaveTestImage("images/" + testImageResourceName, sharedImagesDir);
+        this.testImage = loadAndSaveTestImage(processor.getImageFormat(), sharedImagesDir);
     }
 
     public synchronized void send(Long ref) {
         VideoFrame videoFrame = makePayload(ref);
         System.out.println("Sending InferenceRequest. Stream id: " + videoFrame.streamId() +
                 ", Frame id: " + videoFrame.frameId());
-        Optional<ListenableFuture<InferenceResponse>> result = processor.infer(videoFrame);
-        if (result.isEmpty()) {
-            throw new RuntimeException("session is closed");
-        }
+        ListenableFuture<InferenceResponse> result = processor.infer(videoFrame);
 
         Futures.addCallback(
-                result.get(),
+                result,
                 new FutureCallback<>() {
                     @Override
                     public void onSuccess(InferenceResponse inferenceResponse) {
@@ -63,42 +63,61 @@ public final class CliFrameOrchestrator {
                 MoreExecutors.directExecutor());
     }
 
-    public static File createTempImageFileForProcessor(BufferedImage bufferedImage, Path imagesDirPath)
+    public static File createTempImageFileForProcessor(Path imagesDirPath, byte[] bytes, ProcessorV2Protos.ImageFormat imageFormat)
             throws IOException {
-        final File tempFile = File.createTempFile("testImage", ".png", new File(imagesDirPath.toString()));
+        String imageEncoding;
+        switch(imageFormat) {
+            case PNG:
+                imageEncoding = ".png";
+                break;
+            case TIFF:
+                imageEncoding = ".tiff";
+                break;
+            case RGB888:
+                imageEncoding = ".rgb888";
+                break;
+            case BGR888:
+                imageEncoding = ".bgr888";
+                break;
+            default:
+                throw new RuntimeException(
+                        "invalid image format specified by processor: " + imageFormat);
+        }
+        File tempFile = File.createTempFile("testImage", imageEncoding, new File(imagesDirPath.toString()));
         tempFile.deleteOnExit();
-        ImageIO.write(bufferedImage, "png", tempFile);
+        FileOutputStream outputStream = new FileOutputStream(tempFile);
+        outputStream.write(bytes);
         return tempFile;
     }
 
-    private ProcessorV2Protos.Image constructImage(BufferedImage bufferedImage, File tempFile) {
+    private ProcessorV2Protos.Image constructImage(File tempFile) {
         switch (processor.getImageFormat()) {
             case RGB888:
                 return ProcessorV2Protos.Image.newBuilder()
                         .setRgbImage(ProcessorV2Protos.Rgb888Image.newBuilder()
-                                .setWidth(bufferedImage.getWidth())
-                                .setHeight(bufferedImage.getHeight())
+                                .setWidth(width)
+                                .setHeight(height)
                                 .setPath(tempFile.getAbsolutePath()))
                         .build();
             case BGR888:
                 return ProcessorV2Protos.Image.newBuilder()
                         .setBgrImage(ProcessorV2Protos.Bgr888Image.newBuilder()
-                                .setWidth(bufferedImage.getWidth())
-                                .setHeight(bufferedImage.getHeight())
+                                .setWidth(width)
+                                .setHeight(height)
                                 .setPath(tempFile.getAbsolutePath()))
                         .build();
             case PNG:
                 return ProcessorV2Protos.Image.newBuilder()
                         .setPngImage(ProcessorV2Protos.PngImage.newBuilder()
-                                .setWidth(bufferedImage.getWidth())
-                                .setHeight(bufferedImage.getHeight())
+                                .setWidth(width)
+                                .setHeight(height)
                                 .setPath(tempFile.getAbsolutePath()))
                         .build();
             case TIFF:
                 return ProcessorV2Protos.Image.newBuilder()
                         .setTiffImage(ProcessorV2Protos.TiffImage.newBuilder()
-                                .setWidth(bufferedImage.getWidth())
-                                .setHeight(bufferedImage.getHeight())
+                                .setWidth(width)
+                                .setHeight(height)
                                 .setPath(tempFile.getAbsolutePath()))
                         .build();
             default:
@@ -107,13 +126,45 @@ public final class CliFrameOrchestrator {
         }
     }
 
-    private ProcessorV2Protos.Image loadAndSaveTestImage(String testImageResourcePath, Path sharedImagesDir) {
-        URL imageResource = CliFrameOrchestrator.class.getClassLoader().getResource(testImageResourcePath);
+    private ProcessorV2Protos.Image loadAndSaveTestImage(ProcessorV2Protos.ImageFormat imageFormat, Path sharedImagesDir) {
+        URL imageResourceBgr = CliFrameOrchestrator.class.getClassLoader().getResource(testImageResourcePath);
         try {
-            BufferedImage bufferedImage = ImageIO.read(imageResource);
-            File tempFile = createTempImageFileForProcessor(bufferedImage, sharedImagesDir);
+            byte[] bytes = imageResourceBgr.openStream().readAllBytes();
+
+            switch (imageFormat) {
+                case BGR888:
+                    break;
+                case RGB888:
+                    for (int i = 0; i < bytes.length; i += 3) {
+                        // Swap 1st and 3rd component
+                        byte b = bytes[i];
+                        bytes[i] = bytes[i + 2];
+                        bytes[i + 2] = b;
+                    }
+                    break;
+                case PNG:
+                case TIFF:
+                    BufferedImage bufferedImage =
+                            new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+                    bufferedImage.setData(Raster.createRaster(
+                            bufferedImage.getSampleModel(), new DataBufferByte(bytes, bytes.length), new Point()));
+
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    if (imageFormat == ProcessorV2Protos.ImageFormat.PNG) {
+                        ImageIO.write(bufferedImage, "png", baos);
+                    } else if(imageFormat == ProcessorV2Protos.ImageFormat.TIFF) {
+                        ImageIO.write(bufferedImage, "tiff", baos);
+                    }
+                    bytes = baos.toByteArray();
+                    break;
+                default:
+                    throw new RuntimeException(
+                            "invalid image format specified by processor: " + imageFormat);
+            }
+
+            File tempFile = createTempImageFileForProcessor(sharedImagesDir, bytes, imageFormat);
             System.out.println("Created test image at location:" + tempFile.getPath());
-            return constructImage(bufferedImage, tempFile);
+            return constructImage(tempFile);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
