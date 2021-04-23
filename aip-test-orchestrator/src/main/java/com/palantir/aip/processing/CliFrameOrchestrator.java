@@ -25,9 +25,9 @@ import javax.imageio.ImageIO;
 public final class CliFrameOrchestrator {
     private final AipInferenceProcessorClient processor;
     private final ProcessorV2Protos.Image testImage;
-    private final int height = 2048;
-    private final int width = 2048;
-    private final String testImageResourcePath = "images/testImage.bgr888";
+    private static final int height = 2048;
+    private static final int width = 2048;
+    private static final String testImageResourcePath = "images/testImage.bgr888";
 
     public CliFrameOrchestrator(
             Path sharedImagesDir, AipInferenceProcessorClient processor) {
@@ -83,7 +83,7 @@ public final class CliFrameOrchestrator {
                 throw new RuntimeException(
                         "invalid image format specified by processor: " + imageFormat);
         }
-        final File tempFile = File.createTempFile("testImage", imageEncoding, new File(imagesDirPath.toString()));
+        File tempFile = File.createTempFile("testImage", imageEncoding, new File(imagesDirPath.toString()));
         tempFile.deleteOnExit();
         FileOutputStream outputStream = new FileOutputStream(tempFile);
         outputStream.write(bytes);
