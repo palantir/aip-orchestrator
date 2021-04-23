@@ -10,4 +10,4 @@ The orchestrator comes with a sample image of dimensions 2048 x 2048 x 3, that i
 Running the Orchestrator
 ========================
 
-Please refer to the [QuickStart Guide](https://pages.github.palantir.build/video/aip-sdk/quickstart) for how to run this orchestrator along with a sample Python inference processor.
+Please refer to the [QuickStart Guide](https://palantir.github.io/aip-sdk/quickstart) for how to run this orchestrator along with a sample Python inference processor.
