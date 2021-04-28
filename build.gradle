@@ -18,6 +18,7 @@ buildscript {
 }
 
 apply plugin: 'idea'
+apply plugin: 'com.palantir.external-publish'
 apply plugin: 'com.palantir.git-version'
 apply plugin: 'com.palantir.consistent-versions'
 
