@@ -1,3 +1,3 @@
 rootProject.name = 'aip-orchestrator'
 
-include 'aip-orchestrator-core'
+include 'aip-test-orchestrator'
