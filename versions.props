@@ -1,9 +1,9 @@
 com.google.guava:guava = 30.1.1-jre
 com.palantir.aip.processors.api:aip-processor-api = 0.0.3
-io.grpc:* = 1.37.0
+io.grpc:* = 1.38.0
 info.picocli:picocli = 4.6.1
 org.immutables:* = 2.8.8
 
 # conflict resolution
 com.google.code.findbugs:jsr305 = 3.0.2
-com.google.errorprone:error_prone_annotations = 2.6.0
+com.google.errorprone:error_prone_annotations = 2.7.1
