@@ -16,6 +16,7 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y git-lfs
       - run: git lfs install
       - checkout
+      - run: git lfs pull
       - run:
           name: delete_unrelated_tags
           command: |
