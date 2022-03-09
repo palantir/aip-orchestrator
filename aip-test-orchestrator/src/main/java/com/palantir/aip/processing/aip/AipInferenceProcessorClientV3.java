@@ -3,10 +3,10 @@ package com.palantir.aip.processing.aip;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.palantir.aip.processing.GrpcCalls;
 import com.palantir.aip.proto.configuration.ConfigProtos;
 import com.palantir.aip.proto.configuration.ConfigurationServiceGrpc;
 import com.palantir.aip.proto.processor.v3.ProcessingServiceGrpc;
+import com.palantir.aip.proto.processor.v3.ProcessorV3Protos;
 import com.palantir.aip.proto.processor.v3.ProcessorV3Protos.ProcessRequest;
 import com.palantir.aip.proto.processor.v3.ProcessorV3Protos.ProcessResponse;
 import com.palantir.aip.proto.types.PluginTypes;
@@ -14,6 +14,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -110,13 +111,28 @@ public class AipInferenceProcessorClientV3 {
     }
 
     private void handleConfigurationResponse(ConfigProtos.ConfigurationResponse response) {
-        PluginTypes.ImageFormat imageFormatResponse = response.getVersion().getProcessorV3().getCapabilitiesList().stream().map(capability -> capability.getVideo().getImageFormat()).findAny().get();
-        switch (imageFormatResponse) {
+        Optional<PluginTypes.ImageFormat> imageFormatResponse =
+                response.getVersion().getProcessorV3().getCapabilitiesList().stream()
+                        .filter(ProcessorV3Protos.Capability::hasVideo)
+                        .map(capability -> capability.getVideo().getImageFormat())
+                        .findAny();
+
+        PluginTypes.ImageFormat imageFormat = imageFormatResponse.orElseGet(
+                () -> response.getVersion().getProcessorV3().getCapabilitiesList().stream()
+                        .filter(ProcessorV3Protos.Capability::hasImagery)
+                        .findAny()
+                        .map(_capability -> PluginTypes.ImageFormat.TIFF)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Capability response does not have imagery capability" +
+                                                "and does not have video image format")));
+
+        switch (imageFormat) {
             case RGB888:
             case BGR888:
             case PNG:
             case TIFF:
-                this.imageFormat = imageFormatResponse;
+                this.imageFormat = imageFormat;
                 break;
             default:
                 throw new RuntimeException(

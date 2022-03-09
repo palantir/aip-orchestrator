@@ -16,6 +16,10 @@ import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.InferenceResponse;
 import com.palantir.aip.proto.types.PluginTypes;
 
 import java.nio.file.Path;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @SuppressWarnings("BanSystemOut")
@@ -24,7 +28,7 @@ public final class V2ProcessorOrchestrator {
     private final PluginTypes.Image testImage;
     private final PluginTypes.ImageFormat imageFormat;
 
-    private final AtomicLong frameId = new AtomicLong(0);
+    private long frameId = 0;
 
     public V2ProcessorOrchestrator(
             Path sharedImagesDir, AipInferenceProcessorClientV2 processor) {
@@ -33,8 +37,22 @@ public final class V2ProcessorOrchestrator {
         this.testImage = ProcessorUtils.loadAndSaveTestImage(this.imageFormat, sharedImagesDir);
     }
 
-    public synchronized void send() {
-        VideoFrame videoFrame = makePayload(frameId.getAndIncrement());
+    public void sendAtFixedRate(ScheduledExecutorService executor, long delay, TimeUnit timeUnit) {
+        ScheduledFuture<?> task = executor.scheduleWithFixedDelay(this::send, 0, delay, timeUnit);
+
+        try {
+            System.out.println("Orchestrator: sending task...");
+            // This future will not return unless the program has been interrupted
+            task.get();
+        } catch (InterruptedException | ExecutionException e) {
+            System.out.println("Orchestrator: interrupted. Closing channel.");
+            processor.closeChannel();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private synchronized void send() {
+        VideoFrame videoFrame = makePayload(frameId++);
         System.out.println("Sending InferenceRequest. Stream id: " + videoFrame.streamId() +
                 ", Frame id: " + videoFrame.frameId());
         ListenableFuture<InferenceResponse> result = processor.infer(videoFrame);

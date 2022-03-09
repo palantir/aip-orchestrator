@@ -107,6 +107,15 @@ public final class ProcessorUtils {
                 .build();
     }
 
+    public static ProcessorV3Protos.ImageryRequest buildTestImageryRequest(PluginTypes.Image image) {
+        // Don't actually implement the tiling logic, just send the full image
+        return ProcessorV3Protos.ImageryRequest.newBuilder()
+                .setTiled(ProcessorV3Protos.TiledImage.newBuilder()
+                        .setImage(image)
+                        .build())
+                .build();
+    }
+
     public static PluginTypes.UasMetadata constructSampleUasMetadata() {
         return PluginTypes.UasMetadata.newBuilder()
                 .setPlatformHeadingAngle((float) 196.22980086976426)
