@@ -6,7 +6,7 @@ package com.palantir.aip.processing.aip;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.palantir.aip.processing.GrpcCalls;
-import com.palantir.aip.processing.api.VideoFrame;
+import com.palantir.aip.processing.api.VideoFrameV2;
 import com.palantir.aip.proto.configuration.ConfigProtos;
 import com.palantir.aip.proto.configuration.ConfigurationServiceGrpc;
 import com.palantir.aip.proto.configuration.ConfigurationServiceGrpc.ConfigurationServiceBlockingStub;
@@ -15,10 +15,10 @@ import com.palantir.aip.proto.processor.v2.ProcessorV2Protos;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.ImageFormat;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.InferenceResponse;
 import io.grpc.ManagedChannel;
-import java.util.Optional;
+
 import java.util.concurrent.TimeUnit;
 
-public final class AipInferenceProcessorClient {
+public final class AipInferenceProcessorClientV2 {
     private final ManagedChannel channel;
     private final ConfigProtos.ConfigurationRequest configRequest;
 
@@ -27,7 +27,7 @@ public final class AipInferenceProcessorClient {
 
     private static final double NANOS_PER_TICK = TimeUnit.SECONDS.toNanos(1) / 90000.0;
 
-    public AipInferenceProcessorClient(ManagedChannel channel, String productName, String productVersion) {
+    public AipInferenceProcessorClientV2(ManagedChannel channel, String productName, String productVersion) {
         this.channel = channel;
         this.configRequest = ConfigProtos.ConfigurationRequest.newBuilder()
                 .setOrchestratorName(productName)
@@ -50,7 +50,7 @@ public final class AipInferenceProcessorClient {
         handleConfigurationResponse(configResponse);
     }
 
-    public ListenableFuture<InferenceResponse> infer(VideoFrame videoFrame) {
+    public ListenableFuture<InferenceResponse> infer(VideoFrameV2 videoFrame) {
         ProcessorV2Protos.InferenceRequest request = ProcessorV2Protos.InferenceRequest.newBuilder()
                 .setHeader(getHeader(videoFrame))
                 .setFrame(getFrameMessage(videoFrame))
@@ -59,7 +59,7 @@ public final class AipInferenceProcessorClient {
     }
 
     private void handleConfigurationResponse(ConfigProtos.ConfigurationResponse response) {
-        ImageFormat imageFormatResponse = response.getVersion().getV2().getImageFormat();
+        ImageFormat imageFormatResponse = response.getVersion().getProcessorV2().getImageFormat();
         switch (imageFormatResponse) {
             case RGB888:
             case BGR888:
@@ -73,7 +73,7 @@ public final class AipInferenceProcessorClient {
         }
     }
 
-    private ProcessorV2Protos.RequestHeader getHeader(VideoFrame videoFrame) {
+    private ProcessorV2Protos.RequestHeader getHeader(VideoFrameV2 videoFrame) {
         return ProcessorV2Protos.RequestHeader.newBuilder()
                 .setIdentifier(ProcessorV2Protos.Identifier.newBuilder()
                         .setStreamId(videoFrame.streamId())
@@ -87,7 +87,7 @@ public final class AipInferenceProcessorClient {
                 .build();
     }
 
-    private ProcessorV2Protos.Frame getFrameMessage(VideoFrame frame) {
+    private ProcessorV2Protos.Frame getFrameMessage(VideoFrameV2 frame) {
         return ProcessorV2Protos.Frame.newBuilder()
                 .setImage(frame.image())
                 .setUasMetadata(frame.uasMetadata())

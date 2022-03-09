@@ -8,8 +8,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.palantir.aip.processing.aip.AipInferenceProcessorClient;
-import com.palantir.aip.processing.api.VideoFrame;
+import com.palantir.aip.processing.aip.AipInferenceProcessorClientV2;
+import com.palantir.aip.processing.api.VideoFrameV2;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.InferenceResponse;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.UasMetadata;
@@ -23,20 +23,20 @@ import javax.imageio.ImageIO;
 
 @SuppressWarnings("BanSystemOut")
 public final class CliFrameOrchestrator {
-    private final AipInferenceProcessorClient processor;
+    private final AipInferenceProcessorClientV2 processor;
     private final ProcessorV2Protos.Image testImage;
     private static final int height = 2048;
     private static final int width = 2048;
     private static final String testImageResourcePath = "images/testImage.bgr888";
 
     public CliFrameOrchestrator(
-            Path sharedImagesDir, AipInferenceProcessorClient processor) {
+            Path sharedImagesDir, AipInferenceProcessorClientV2 processor) {
         this.processor = processor;
         this.testImage = loadAndSaveTestImage(processor.getImageFormat(), sharedImagesDir);
     }
 
     public synchronized void send(Long ref) {
-        VideoFrame videoFrame = makePayload(ref);
+        VideoFrameV2 videoFrame = makePayload(ref);
         System.out.println("Sending InferenceRequest. Stream id: " + videoFrame.streamId() +
                 ", Frame id: " + videoFrame.frameId());
         ListenableFuture<InferenceResponse> result = processor.infer(videoFrame);
@@ -193,8 +193,8 @@ public final class CliFrameOrchestrator {
                 .build();
     }
 
-    private VideoFrame makePayload(long ref) {
-        return new VideoFrame() {
+    private VideoFrameV2 makePayload(long ref) {
+        return new VideoFrameV2() {
             @Override
             public long streamId() {
                 return 0;

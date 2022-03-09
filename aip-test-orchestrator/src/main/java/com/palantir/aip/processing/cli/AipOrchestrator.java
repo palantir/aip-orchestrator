@@ -6,7 +6,7 @@ package com.palantir.aip.processing.cli;
 
 import com.google.common.net.HostAndPort;
 import com.palantir.aip.processing.CliFrameOrchestrator;
-import com.palantir.aip.processing.aip.AipInferenceProcessorClient;
+import com.palantir.aip.processing.aip.AipInferenceProcessorClientV2;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.net.URI;
@@ -48,13 +48,14 @@ public final class AipOrchestrator implements Runnable {
             defaultValue = "0.2")
     private double framesPerSecond;
 
+
     private final AtomicLong frameId = new AtomicLong(0);
 
-    public static AipInferenceProcessorClient grpc(HostAndPort hostAndPort, String productName, String productVersion) {
+    public static AipInferenceProcessorClientV2 grpc(HostAndPort hostAndPort, String productName, String productVersion) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress(hostAndPort.getHost(), hostAndPort.getPort())
                 .usePlaintext()
                 .build();
-        return new AipInferenceProcessorClient(channel, productName, productVersion);
+        return new AipInferenceProcessorClientV2(channel, productName, productVersion);
     }
 
     public static void main(String... args) {
@@ -67,7 +68,7 @@ public final class AipOrchestrator implements Runnable {
         System.out.println("Frames per second: " + framesPerSecond);
 
         System.out.println("Sending configuration request to server...");
-        AipInferenceProcessorClient processor = grpc(
+        AipInferenceProcessorClientV2 processor = grpc(
                         HostAndPort.fromParts(uri.getHost(), uri.getPort()),
                         "AIP Orchestrator",
                         Optional.ofNullable(AipOrchestrator.class.getPackage().getImplementationVersion())
