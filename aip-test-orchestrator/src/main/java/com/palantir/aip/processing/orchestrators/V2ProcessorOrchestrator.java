@@ -79,7 +79,6 @@ public final class V2ProcessorOrchestrator {
                 MoreExecutors.directExecutor());
     }
 
-
     private void processResponse(InferenceResponse inferenceResponse) {
         long frameId = inferenceResponse.getIdentifier().getFrameId();
         System.out.println("Orchestrator received inference response for frame id " + frameId + ":");

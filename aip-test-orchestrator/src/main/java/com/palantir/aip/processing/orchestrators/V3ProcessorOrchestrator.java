@@ -107,7 +107,6 @@ public class V3ProcessorOrchestrator {
                 MoreExecutors.directExecutor());
     }
 
-
     private void sendStartupIfFrameIdIsZero() {
         if (frameId == 0) {
             try {

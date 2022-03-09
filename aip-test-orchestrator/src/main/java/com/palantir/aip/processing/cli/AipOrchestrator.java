@@ -54,8 +54,6 @@ public final class AipOrchestrator implements Runnable {
     )
     private String version;
 
-
-
     public static AipInferenceProcessorClientV2 grpcV2(HostAndPort hostAndPort, String productName, String productVersion) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress(hostAndPort.getHost(), hostAndPort.getPort())
                 .usePlaintext()

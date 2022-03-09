@@ -30,7 +30,6 @@ public class AipInferenceProcessorClientV3 {
 
     private boolean closed = false;
 
-
     private static final double NANOS_PER_TICK = TimeUnit.SECONDS.toNanos(1) / 90000.0;
 
     public AipInferenceProcessorClientV3(ManagedChannel channel, String productName, String productVersion) {
