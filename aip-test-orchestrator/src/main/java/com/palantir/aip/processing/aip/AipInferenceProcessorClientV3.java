@@ -110,28 +110,29 @@ public class AipInferenceProcessorClientV3 {
     }
 
     private void handleConfigurationResponse(ConfigProtos.ConfigurationResponse response) {
-        Optional<PluginTypes.ImageFormat> imageFormatResponse =
+        PluginTypes.ImageFormat imageFormatResponse =
                 response.getVersion().getProcessorV3().getCapabilitiesList().stream()
-                        .filter(ProcessorV3Protos.Capability::hasVideo)
-                        .map(capability -> capability.getVideo().getImageFormat())
-                        .findAny();
-
-        PluginTypes.ImageFormat imageFormat = imageFormatResponse.orElseGet(
-                () -> response.getVersion().getProcessorV3().getCapabilitiesList().stream()
-                        .filter(ProcessorV3Protos.Capability::hasImagery)
+                        .filter(capability -> capability.hasVideo()
+                                || (capability.hasImagery()
+                                        && capability.getImagery().hasTiled()))
+                        .map(capability -> {
+                            if (capability.hasVideo()) {
+                                return capability.getVideo().getImageFormat();
+                            } else {
+                                return capability.getImagery().getTiled().getImageFormat();
+                            }
+                        })
                         .findAny()
-                        .map(_capability -> PluginTypes.ImageFormat.TIFF)
                         .orElseThrow(
                                 () -> new RuntimeException(
-                                        "Capability response does not have imagery capability" +
-                                                "and does not have video image format")));
+                                        "Configuration response did not include image format for video or imagery capabilities"));
 
-        switch (imageFormat) {
+        switch (imageFormatResponse) {
             case RGB888:
             case BGR888:
             case PNG:
             case TIFF:
-                this.imageFormat = imageFormat;
+                this.imageFormat = imageFormatResponse;
                 break;
             default:
                 throw new RuntimeException(
