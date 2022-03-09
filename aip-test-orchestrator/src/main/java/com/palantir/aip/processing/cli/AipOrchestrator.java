@@ -5,7 +5,7 @@
 package com.palantir.aip.processing.cli;
 
 import com.google.common.net.HostAndPort;
-import com.palantir.aip.processing.CliFrameOrchestrator;
+import com.palantir.aip.processing.orchestrators.V2ProcessorOrchestrator;
 import com.palantir.aip.processing.aip.AipInferenceProcessorClientV2;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -16,7 +16,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -49,7 +48,6 @@ public final class AipOrchestrator implements Runnable {
     private double framesPerSecond;
 
 
-    private final AtomicLong frameId = new AtomicLong(0);
 
     public static AipInferenceProcessorClientV2 grpc(HostAndPort hostAndPort, String productName, String productVersion) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress(hostAndPort.getHost(), hostAndPort.getPort())
@@ -82,11 +80,11 @@ public final class AipOrchestrator implements Runnable {
         }
         System.out.println("Processor configured. Getting ready to send inference requests.");
 
-        CliFrameOrchestrator dispatcher = new CliFrameOrchestrator(sharedImagesDir, processor);
+        V2ProcessorOrchestrator dispatcher = new V2ProcessorOrchestrator(sharedImagesDir, processor);
         long nanosPerFrame = (long) ((1.0 / framesPerSecond) * 1_000_000_000);
         ScheduledFuture<?> task = Executors.newScheduledThreadPool(1)
                 .scheduleAtFixedRate(
-                        () -> dispatcher.send(frameId.getAndIncrement()), 0, nanosPerFrame, TimeUnit.NANOSECONDS);
+                        dispatcher::send, 0, nanosPerFrame, TimeUnit.NANOSECONDS);
         try {
             System.out.println("Orchestrator: sending task...");
             // This future will not return unless the program has been interrupted

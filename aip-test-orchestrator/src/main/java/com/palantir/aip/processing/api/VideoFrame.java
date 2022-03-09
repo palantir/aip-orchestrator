@@ -14,7 +14,7 @@ import com.palantir.aip.proto.processor.v2.ProcessorV2Protos;
  * {@link AipInferenceProcessorClientV2#infer} returns. In
  * particular, the returned future should not have access to the Frame.
  */
-public interface VideoFrameV2 {
+public interface VideoFrame {
     long streamId();
 
     long frameId();

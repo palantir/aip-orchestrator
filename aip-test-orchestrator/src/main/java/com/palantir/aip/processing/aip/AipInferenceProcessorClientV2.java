@@ -6,7 +6,7 @@ package com.palantir.aip.processing.aip;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.palantir.aip.processing.GrpcCalls;
-import com.palantir.aip.processing.api.VideoFrameV2;
+import com.palantir.aip.processing.api.VideoFrame;
 import com.palantir.aip.proto.configuration.ConfigProtos;
 import com.palantir.aip.proto.configuration.ConfigurationServiceGrpc;
 import com.palantir.aip.proto.configuration.ConfigurationServiceGrpc.ConfigurationServiceBlockingStub;
@@ -50,7 +50,7 @@ public final class AipInferenceProcessorClientV2 {
         handleConfigurationResponse(configResponse);
     }
 
-    public ListenableFuture<InferenceResponse> infer(VideoFrameV2 videoFrame) {
+    public ListenableFuture<InferenceResponse> infer(VideoFrame videoFrame) {
         ProcessorV2Protos.InferenceRequest request = ProcessorV2Protos.InferenceRequest.newBuilder()
                 .setHeader(getHeader(videoFrame))
                 .setFrame(getFrameMessage(videoFrame))
@@ -73,7 +73,7 @@ public final class AipInferenceProcessorClientV2 {
         }
     }
 
-    private ProcessorV2Protos.RequestHeader getHeader(VideoFrameV2 videoFrame) {
+    private ProcessorV2Protos.RequestHeader getHeader(VideoFrame videoFrame) {
         return ProcessorV2Protos.RequestHeader.newBuilder()
                 .setIdentifier(ProcessorV2Protos.Identifier.newBuilder()
                         .setStreamId(videoFrame.streamId())
@@ -87,7 +87,7 @@ public final class AipInferenceProcessorClientV2 {
                 .build();
     }
 
-    private ProcessorV2Protos.Frame getFrameMessage(VideoFrameV2 frame) {
+    private ProcessorV2Protos.Frame getFrameMessage(VideoFrame frame) {
         return ProcessorV2Protos.Frame.newBuilder()
                 .setImage(frame.image())
                 .setUasMetadata(frame.uasMetadata())
