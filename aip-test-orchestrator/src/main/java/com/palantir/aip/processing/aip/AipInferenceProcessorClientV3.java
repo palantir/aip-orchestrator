@@ -6,7 +6,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.palantir.aip.proto.configuration.ConfigProtos;
 import com.palantir.aip.proto.configuration.ConfigurationServiceGrpc;
 import com.palantir.aip.proto.processor.v3.ProcessingServiceGrpc;
-import com.palantir.aip.proto.processor.v3.ProcessorV3Protos;
 import com.palantir.aip.proto.processor.v3.ProcessorV3Protos.ProcessRequest;
 import com.palantir.aip.proto.processor.v3.ProcessorV3Protos.ProcessResponse;
 import com.palantir.aip.proto.types.PluginTypes;
@@ -14,7 +13,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +27,7 @@ public class AipInferenceProcessorClientV3 {
     private StreamObserver<ProcessRequest> requestObserver;
 
     private boolean closed = false;
+    private boolean supportsRaw = false;
 
     private static final double NANOS_PER_TICK = TimeUnit.SECONDS.toNanos(1) / 90000.0;
 
@@ -43,6 +42,10 @@ public class AipInferenceProcessorClientV3 {
 
     public PluginTypes.ImageFormat getImageFormat() {
         return imageFormat;
+    }
+
+    public boolean getSupportsRawImagery() {
+        return supportsRaw;
     }
 
     public void configure() {
@@ -118,6 +121,9 @@ public class AipInferenceProcessorClientV3 {
                         .map(capability -> {
                             if (capability.hasVideo()) {
                                 return capability.getVideo().getImageFormat();
+                            } else if (capability.getImagery().hasRaw()) {
+                                this.supportsRaw = true;
+                                return PluginTypes.ImageFormat.TIFF;
                             } else {
                                 return capability.getImagery().getTiled().getImageFormat();
                             }

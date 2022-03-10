@@ -107,13 +107,21 @@ public final class ProcessorUtils {
                 .build();
     }
 
-    public static ProcessorV3Protos.ImageryRequest buildTestImageryRequest(PluginTypes.Image image) {
-        // Don't actually implement the tiling logic, just send the full image
-        return ProcessorV3Protos.ImageryRequest.newBuilder()
-                .setTiled(ProcessorV3Protos.TiledImage.newBuilder()
-                        .setImage(image)
-                        .build())
-                .build();
+    public static ProcessorV3Protos.ImageryRequest buildTestImageryRequest(
+            PluginTypes.Image image, boolean rawImagery) {
+        if (rawImagery) {
+            return ProcessorV3Protos.ImageryRequest.newBuilder()
+                    .setRaw(ProcessorV3Protos.RawImage.newBuilder()
+                            .setPath(image.getPath())
+                            .build())
+                    .build();
+        } else {
+            return ProcessorV3Protos.ImageryRequest.newBuilder()
+                    .setTiled(ProcessorV3Protos.TiledImage.newBuilder()
+                            .setImage(image)
+                            .build())
+                    .build();
+        }
     }
 
     public static PluginTypes.UasMetadata constructSampleUasMetadata() {

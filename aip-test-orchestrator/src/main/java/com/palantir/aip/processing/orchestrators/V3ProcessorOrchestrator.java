@@ -76,7 +76,7 @@ public class V3ProcessorOrchestrator {
         sendStartupIfFrameIdIsZero();
 
         ProcessorV3Protos.ImageryRequest videoRequest =
-                ProcessorUtils.buildTestImageryRequest(testImage);
+                ProcessorUtils.buildTestImageryRequest(testImage, processor.getSupportsRawImagery());
 
         ListenableFuture<ProcessorV3Protos.ProcessResponse> response =
                 processor.process(ProcessorV3Protos.ProcessRequest.newBuilder()
