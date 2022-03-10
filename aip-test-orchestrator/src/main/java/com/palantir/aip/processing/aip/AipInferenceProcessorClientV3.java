@@ -85,7 +85,7 @@ public class AipInferenceProcessorClientV3 {
                     futures.remove(requestId);
                 }
 
-                throw new RuntimeException("Unknown response id received from processor");
+                onError(new RuntimeException("Unknown response id received from processor: " + requestId));
             }
 
             @Override
