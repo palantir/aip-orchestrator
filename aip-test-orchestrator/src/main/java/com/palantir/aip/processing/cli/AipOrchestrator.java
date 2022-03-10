@@ -5,18 +5,17 @@
 package com.palantir.aip.processing.cli;
 
 import com.google.common.net.HostAndPort;
-import com.palantir.aip.processing.CliFrameOrchestrator;
-import com.palantir.aip.processing.aip.AipInferenceProcessorClient;
+import com.palantir.aip.processing.aip.AipInferenceProcessorClientV3;
+import com.palantir.aip.processing.orchestrators.V2ProcessorOrchestrator;
+import com.palantir.aip.processing.aip.AipInferenceProcessorClientV2;
+import com.palantir.aip.processing.orchestrators.V3ProcessorOrchestrator;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.*;
+
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -48,13 +47,25 @@ public final class AipOrchestrator implements Runnable {
             defaultValue = "0.2")
     private double framesPerSecond;
 
-    private final AtomicLong frameId = new AtomicLong(0);
+    @CommandLine.Option(
+            names = "--type",
+            description = "The type of processor to test. Valid options are: v2, v3video, v3imagery",
+            defaultValue = "v3video"
+    )
+    private String type;
 
-    public static AipInferenceProcessorClient grpc(HostAndPort hostAndPort, String productName, String productVersion) {
+    public static AipInferenceProcessorClientV2 grpcV2(HostAndPort hostAndPort, String productName, String productVersion) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress(hostAndPort.getHost(), hostAndPort.getPort())
                 .usePlaintext()
                 .build();
-        return new AipInferenceProcessorClient(channel, productName, productVersion);
+        return new AipInferenceProcessorClientV2(channel, productName, productVersion);
+    }
+
+    public static AipInferenceProcessorClientV3 grpcV3(HostAndPort hostAndPort, String productName, String productVersion) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(hostAndPort.getHost(), hostAndPort.getPort())
+                .usePlaintext()
+                .build();
+        return new AipInferenceProcessorClientV3(channel, productName, productVersion);
     }
 
     public static void main(String... args) {
@@ -66,8 +77,22 @@ public final class AipOrchestrator implements Runnable {
         System.out.println("Orchestrator: running");
         System.out.println("Frames per second: " + framesPerSecond);
 
+        switch(type.toLowerCase()) {
+            case "v2":
+                handleV2();
+                break;
+            case "v3video":
+                handleV3Video();
+                break;
+            case "v3imagery":
+                handleV3Imagery();
+                break;
+        }
+    }
+
+    private void handleV2() {
         System.out.println("Sending configuration request to server...");
-        AipInferenceProcessorClient processor = grpc(
+        AipInferenceProcessorClientV2 processor = grpcV2(
                         HostAndPort.fromParts(uri.getHost(), uri.getPort()),
                         "AIP Orchestrator",
                         Optional.ofNullable(AipOrchestrator.class.getPackage().getImplementationVersion())
@@ -81,19 +106,56 @@ public final class AipOrchestrator implements Runnable {
         }
         System.out.println("Processor configured. Getting ready to send inference requests.");
 
-        CliFrameOrchestrator dispatcher = new CliFrameOrchestrator(sharedImagesDir, processor);
+        V2ProcessorOrchestrator dispatcher = new V2ProcessorOrchestrator(sharedImagesDir, processor);
+
         long nanosPerFrame = (long) ((1.0 / framesPerSecond) * 1_000_000_000);
-        ScheduledFuture<?> task = Executors.newScheduledThreadPool(1)
-                .scheduleAtFixedRate(
-                        () -> dispatcher.send(frameId.getAndIncrement()), 0, nanosPerFrame, TimeUnit.NANOSECONDS);
+        ScheduledExecutorService executor =  Executors.newScheduledThreadPool(1);
+        dispatcher.sendAtFixedRate(executor, nanosPerFrame, TimeUnit.NANOSECONDS);
+    }
+
+    private void handleV3Video() {
+        System.out.println("Sending configuration request to server...");
+        AipInferenceProcessorClientV3 processor = grpcV3(
+                HostAndPort.fromParts(uri.getHost(), uri.getPort()),
+                "AIP Orchestrator",
+                Optional.ofNullable(AipOrchestrator.class.getPackage().getImplementationVersion())
+                        .orElse("0.0.0"));
+
         try {
-            System.out.println("Orchestrator: sending task...");
-            // This future will not return unless the program has been interrupted
-            task.get();
-        } catch (InterruptedException | ExecutionException e) {
-            System.out.println("Orchestrator: interrupted. Closing channel.");
-            processor.closeChannel();
-            throw new RuntimeException(e);
+            processor.configure();
+        } catch (RuntimeException e) {
+            System.out.println("Error when initializing processor" + e.toString());
+            throw e;
         }
+        System.out.println("Processor configured. Getting ready to send inference requests.");
+
+        V3ProcessorOrchestrator dispatcher = new V3ProcessorOrchestrator(sharedImagesDir, processor);
+
+        long nanosPerFrame = (long) ((1.0 / framesPerSecond) * 1_000_000_000);
+        ScheduledExecutorService executor =  Executors.newScheduledThreadPool(1);
+        dispatcher.sendVideoAtFixedRate(executor, nanosPerFrame, TimeUnit.NANOSECONDS);
+    }
+
+    private void handleV3Imagery() {
+        System.out.println("Sending configuration request to server...");
+        AipInferenceProcessorClientV3 processor = grpcV3(
+                HostAndPort.fromParts(uri.getHost(), uri.getPort()),
+                "AIP Orchestrator",
+                Optional.ofNullable(AipOrchestrator.class.getPackage().getImplementationVersion())
+                        .orElse("0.0.0"));
+
+        try {
+            processor.configure();
+        } catch (RuntimeException e) {
+            System.out.println("Error when initializing processor" + e);
+            throw e;
+        }
+        System.out.println("Processor configured. Getting ready to send inference requests.");
+
+        V3ProcessorOrchestrator dispatcher = new V3ProcessorOrchestrator(sharedImagesDir, processor);
+
+        long nanosPerFrame = (long) ((1.0 / framesPerSecond) * 1_000_000_000);
+        ScheduledExecutorService executor =  Executors.newScheduledThreadPool(1);
+        dispatcher.sendImageryAtFixedRate(executor, nanosPerFrame, TimeUnit.NANOSECONDS);
     }
 }

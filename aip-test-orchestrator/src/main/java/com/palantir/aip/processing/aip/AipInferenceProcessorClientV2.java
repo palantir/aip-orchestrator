@@ -15,10 +15,10 @@ import com.palantir.aip.proto.processor.v2.ProcessorV2Protos;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.ImageFormat;
 import com.palantir.aip.proto.processor.v2.ProcessorV2Protos.InferenceResponse;
 import io.grpc.ManagedChannel;
-import java.util.Optional;
+
 import java.util.concurrent.TimeUnit;
 
-public final class AipInferenceProcessorClient {
+public final class AipInferenceProcessorClientV2 {
     private final ManagedChannel channel;
     private final ConfigProtos.ConfigurationRequest configRequest;
 
@@ -27,7 +27,7 @@ public final class AipInferenceProcessorClient {
 
     private static final double NANOS_PER_TICK = TimeUnit.SECONDS.toNanos(1) / 90000.0;
 
-    public AipInferenceProcessorClient(ManagedChannel channel, String productName, String productVersion) {
+    public AipInferenceProcessorClientV2(ManagedChannel channel, String productName, String productVersion) {
         this.channel = channel;
         this.configRequest = ConfigProtos.ConfigurationRequest.newBuilder()
                 .setOrchestratorName(productName)
@@ -59,7 +59,7 @@ public final class AipInferenceProcessorClient {
     }
 
     private void handleConfigurationResponse(ConfigProtos.ConfigurationResponse response) {
-        ImageFormat imageFormatResponse = response.getVersion().getV2().getImageFormat();
+        ImageFormat imageFormatResponse = response.getVersion().getProcessorV2().getImageFormat();
         switch (imageFormatResponse) {
             case RGB888:
             case BGR888:
