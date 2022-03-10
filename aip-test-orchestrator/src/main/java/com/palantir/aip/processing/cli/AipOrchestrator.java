@@ -48,11 +48,11 @@ public final class AipOrchestrator implements Runnable {
     private double framesPerSecond;
 
     @CommandLine.Option(
-            names = "--version",
-            description = "The version of processor to test. Valid options are: v2, v3video, v3imagery",
+            names = "--type",
+            description = "The type of processor to test. Valid options are: v2, v3video, v3imagery",
             defaultValue = "v3video"
     )
-    private String version;
+    private String type;
 
     public static AipInferenceProcessorClientV2 grpcV2(HostAndPort hostAndPort, String productName, String productVersion) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress(hostAndPort.getHost(), hostAndPort.getPort())
@@ -77,7 +77,7 @@ public final class AipOrchestrator implements Runnable {
         System.out.println("Orchestrator: running");
         System.out.println("Frames per second: " + framesPerSecond);
 
-        switch(version.toLowerCase()) {
+        switch(type.toLowerCase()) {
             case "v2":
                 handleV2();
                 break;

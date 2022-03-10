@@ -83,9 +83,9 @@ public class AipInferenceProcessorClientV3 {
                 if (futures.containsKey(requestId)) {
                     futures.get(requestId).set(value);
                     futures.remove(requestId);
+                } else if (requestId != 0) {
+                    onError(new RuntimeException("Unknown response id received from processor: " + requestId));
                 }
-
-                onError(new RuntimeException("Unknown response id received from processor: " + requestId));
             }
 
             @Override
