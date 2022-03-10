@@ -58,7 +58,7 @@ public class V3ProcessorOrchestrator {
     }
 
     private synchronized void sendVideo() {
-        sendStartupIfFrameIdIsZero();
+        sendAndReceiveStartup();
 
         ProcessorV3Protos.VideoRequest videoRequest =
                 ProcessorUtils.buildTestVideoRequest(testImage, ProcessorUtils.constructSampleUasMetadata());
@@ -73,7 +73,7 @@ public class V3ProcessorOrchestrator {
 
 
     private synchronized void sendImagery() {
-        sendStartupIfFrameIdIsZero();
+        sendAndReceiveStartup();
 
         ProcessorV3Protos.ImageryRequest videoRequest =
                 ProcessorUtils.buildTestImageryRequest(testImage, processor.getSupportsRawImagery());
@@ -107,7 +107,7 @@ public class V3ProcessorOrchestrator {
                 MoreExecutors.directExecutor());
     }
 
-    private void sendStartupIfFrameIdIsZero() {
+    private void sendAndReceiveStartup() {
         if (frameId == 0) {
             try {
                 processor
